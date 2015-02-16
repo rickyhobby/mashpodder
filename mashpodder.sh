@@ -121,6 +121,19 @@ WGET_QUIET="-q"
 # files are cut short. Thanks to Phil Smith for the bug report.
 WGET_TIMEOUT="30"
 
+# LIMIT_RATE: Default "" is unlimited download rate; "1" limits the download
+# rate to a maximum of $WGET_RATELIMIT.  This is useful, for example, if
+# you download podcasts in the background while doing other things on the
+# internet.  Limiting it to less than your total available bandwidth should
+# cause other applications, such as browsing, not to feel sluggish.
+LIMIT_RATE="1"
+
+# WGET_RATELIMIT: When $LIMIT_RATE is = "1", this is the maximum download
+# rate for podcasts, in bytes per second.  The amount may be expressed in
+# bytes, kilobytes with the k suffix, or megabytes with the m suffix.
+# For example, 500k will limit the retrieval rate to 500KB/s.
+WGET_RATELIMIT="4000k"
+
 # Location of binaries.  Below are the paths to third-party binaries used by
 # mashpodder.  This is here for BSD users where these binaries are usually in
 # /usr/local/bin.  Defaults are Linux locations (i.e. /usr/bin).
@@ -459,9 +472,15 @@ fetch_podcasts () {
                             $DATADIR directory."
                         echo "$FILENAME downloaded to $DATADIR" >> $SUMMARYLOG
                     fi
+
                     cd $TMPDIR
-                    $WGET $WGET_QUIET -c -T $WGET_TIMEOUT -O "$FILENAME" \
-                        "$DLURL"
+                    if [ $LIMIT_RATE = "1" ]; then
+                        $WGET $WGET_QUIET -c -T $WGET_TIMEOUT -O "$FILENAME" \
+                            --limit-rate=$WGET_RATELIMIT "$DLURL"
+                    else
+                        $WGET $WGET_QUIET -c -T $WGET_TIMEOUT -O "$FILENAME" \
+                            "$DLURL"
+                    fi
                     ((NEWDL=NEWDL+1))
                     mv "$FILENAME" $PODCASTDIR/$DATADIR/"$FILENAME"
                     cd $BASEDIR
@@ -523,6 +542,11 @@ final_cleanup () {
     rm -f $TEMPRSSFILE
     if verbose; then
         echo "Total downloads: $NEWDL"
+        if [ $LIMIT_RATE = "1" ]; then
+            echo "Downloads were rate limited to $WGET_RATELIMIT."
+        else
+            echo "Downloads were not rate limited."
+        fi
         echo "All done."
         if [ -e $SUMMARYLOG ]; then
             echo
@@ -541,7 +565,7 @@ final_cleanup () {
 
 # THIS IS THE ACTUAL START OF SCRIPT
 # Here are the command line switches
-while getopts ":bc:d:fmsuvh" OPT ;do
+while getopts ":bc:d:fl:msuvh" OPT ;do
     case $OPT in
         b )         PODLOG_BACKUP=1
                     ;;
@@ -550,6 +574,9 @@ while getopts ":bc:d:fmsuvh" OPT ;do
         d )         DATESTRING="$OPTARG"
                     ;;
         f )         FIRST_ONLY=1
+                    ;;
+        l )         WGET_RATELIMIT="$OPTARG"
+                    LIMIT_RATE=1
                     ;;
         m )         M3U=1
                     ;;
@@ -571,6 +598,8 @@ Options are:
 -f              Override mp.conf and download the first new episode.
 
 -h              Display this help message.
+
+-l <bytes>      Limit the download rate to a maximum of <bytes> per second.
 
 -m              Create m3u playlists.
 
