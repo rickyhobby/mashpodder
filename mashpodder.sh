@@ -170,13 +170,13 @@ sanity_checks () {
         crunch "\$BASEDIR has not been set.  Please review the USER \
             CONFIGURATION section at the top of mashpodder.sh and set \
             \$BASEDIR and any other applicable options."
-        exit 0
+        exit 1
     fi
 
     if [ ! -e $BASEDIR ]; then
         crunch "\$BASEDIR does not exist.  Please re-check the settings \
             at the top of mashpodder.sh and try again."
-        exit 0
+        exit 1
     fi
 
     cd $BASEDIR
@@ -216,7 +216,7 @@ sanity_checks () {
             crunch "\$PODCASTDIR does not exist.  Please re-check the settings \
                 at the top of mashpodder.sh and try again.  This could also \
                 indiciate an unmounted share, if it is on a shared directory."
-            exit 0
+            exit 1
         fi
     fi
 
@@ -236,7 +236,7 @@ sanity_checks () {
         crunch "The file $RSSFILE cannot be found.  Run $0 -h \
             for usage and check the settings at the top of mashpodder.sh.\
             Exiting."
-        exit 0
+        exit 1
     fi
 
     # Check the mp.conf and do some basic error checking
@@ -258,7 +258,7 @@ sanity_checks () {
                 According to $RSSFILE, it is set to $DLNUM. \
                 It should be set to 'none', 'all', 'update', or a number \
                 greater than zero.  Please check $RSSFILE.  Exiting"
-            exit 0
+            exit 1
         fi
 
         # Check type of archiving for each feed
@@ -277,7 +277,7 @@ sanity_checks () {
                 crunch "Error in archive type for $FEED.  It should be set \
                     to 'date' for date-based archiving, or to a directory \
                     name for directory-based archiving.  Exiting."
-                exit 0
+                exit 1
             fi
         fi
 
