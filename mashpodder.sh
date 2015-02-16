@@ -155,7 +155,7 @@ verbose () {
 
 sanity_checks () {
     # Perform some basic checks
-    local FEED ARCHIVETYPE DLNUM DATADIR NEWPODLOG INCREMENT
+    local FEED ARCHIVETYPE DLNUM DATADIR NEWPODLOG INCREMENT BINFAIL
 
     # Print the date
     if verbose; then
@@ -181,20 +181,28 @@ sanity_checks () {
 
     cd $BASEDIR
 
-    # Check to see if the dependent binaries are installed
+    # Check to see if the dependent binaries are installed, exit if not
+    BINFAIL=""
     if [ ! -x $XSLTPROC ]; then
-        crunch "xsltproc not found or is not executable!  Exiting."
-        exit 0
+        crunch "xsltproc is not found or is not executable!"
+        BINFAIL="1"
     fi
 
     if [ ! -x $WGET ]; then
-        crunch "wget not found or is not executable!  Exiting."
-        exit 0
+        crunch "wget is not found or is not executable!"
+        BINFAIL="1"
     fi
 
     if [ ! -x $CURL ]; then
-        crunch "curl not found or is not executable!  Exiting."
-        exit 0
+        crunch "curl is not found or is not executable!"
+        BINFAIL="1"
+    fi
+
+    if [ $BINFAIL = "1" ]; then
+        crunch "Dependent binaries failure.  Check the settings at the top \
+            of mashpodder.sh to see if they are set correctly and that they \
+            are all installed.  Exiting!"
+        exit 1
     fi
 
     # Make podcast directory if necessary
