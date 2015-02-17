@@ -113,6 +113,11 @@ UPDATE=""
 # VERBOSE: Default "" is quiet output; "1" is verbose.
 VERBOSE=""
 
+# DEBUG: Provide additional output useful for debugging troublesome operation.
+# NOTE: Does not modify script execution or behaviour.
+# Default "" is suppressed debug output; "1" is enabled debug output.
+DEBUG=""
+
 # WGET_QUIET: Default is "-q" for quiet wget output; change to "" for wget
 # output.
 WGET_QUIET="-q"
@@ -166,6 +171,14 @@ verbose () {
     fi
 }
 
+debug () {
+    if [ "$DEBUG" = "1" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 sanity_checks () {
     # Perform some basic checks
     local FEED ARCHIVETYPE DLNUM DATADIR NEWPODLOG INCREMENT BINFAIL
@@ -176,6 +189,11 @@ sanity_checks () {
         echo "################################"
         echo "Starting mashpodder on"
         date
+        echo
+    fi
+
+    if debug; then
+        crunch "DEBUG flag set - adding extra debug output."
         echo
     fi
 
@@ -199,16 +217,28 @@ sanity_checks () {
     if [ ! -x $XSLTPROC ]; then
         crunch "xsltproc is not found or is not executable!"
         BINFAIL="1"
+    else
+        if debug; then
+            crunch "xsltproc command found and is executable"
+        fi
     fi
 
     if [ ! -x $WGET ]; then
         crunch "wget is not found or is not executable!"
         BINFAIL="1"
+    else
+        if debug; then
+            crunch "wget command found and is executable"
+        fi
     fi
 
     if [ ! -x $CURL ]; then
         crunch "curl is not found or is not executable!"
         BINFAIL="1"
+    else
+        if debug; then
+            crunch "curl command found and is executable"
+        fi
     fi
 
     if [ $BINFAIL = "1" ]; then
@@ -401,7 +431,7 @@ check_directory () {
 
 fetch_podcasts () {
     # This is the main loop
-    local LINE FEED DATADIR DLNUM COUNTER FILE URL FILENAME DLURL ORIGINALFILENAME ORIGINALEXTENSION DOWNLOADFILENAME DOWNLOADEXTENSION
+    local LINE FEED DATADIR DLNUM COUNTER FILE URL FILENAME DLURL ORIGINALFILENAME ORIGINALEXTENSION DOWNLOADFILENAME DOWNLOADEXTENSION FIXEDFILENAME
 
     # Read the mp.conf file and wget any url not already in the
     # podcast.log file:
@@ -443,6 +473,16 @@ fetch_podcasts () {
             fi
         fi
 
+        if debug; then
+            crunch "This is the resultant \$FILE in the fetch_podcasts () \
+                function after being ran through xsltproc:"
+            crunch $FILE
+            echo
+            crunch "Beginning download URL determination, filename \
+                extraction, filename fixing, log comparison, and downloading \
+                of files"
+        fi
+
         for URL in $FILE; do
             FILENAME=''
             if [ "$DLNUM" = "$COUNTER" ]; then
@@ -451,6 +491,13 @@ fetch_podcasts () {
 
             # Determine the final, possibly redirected URL of the file.
             DLURL=$($CURL -s -I -L -w %{url_effective} --url $URL | tail -n 1)
+            if debug; then
+                echo
+                crunch "\$URL from \$FILE determined to be:"
+                crunch $URL
+                crunch "\$DLURL determined to be:"
+                crunch $DLURL
+            fi
 
             # Clean and fix the original filename and extension
             # as listed in the feed.
@@ -464,12 +511,39 @@ fetch_podcasts () {
             DOWNLOADFILENAME="${FILENAME%.*}"
             DOWNLOADEXTENSION="${FILENAME##*.}"
 
-            # Determine the final filename by combining the original
+            # Determine the fixed filename by combining the original
             # suffixless basename, and the extension from the final URL.
             # While this usually the same, some feeds will redirect to a
             # different filename (eg http://rss.cat5.tv/hd.rss)
-            FILENAME="$ORIGINALFILENAME"."$DOWNLOADEXTENSION"
+            FIXEDFILENAME="$ORIGINALFILENAME"."$DOWNLOADEXTENSION"
+            if debug; then
+                crunch "Resultant \$ORIGINALFILENAME in the fetch_podcasts \
+                    () function after running through function fix_url () of \
+                    the \$URL determined to be:"
+                crunch $ORIGINALFILENAME
+                crunch "Resultant \$ORIGINALEXTENSION in the fetch_podcasts \
+                    () function after running through function fix_url () of \
+                    the \$URL determined to be:"
+                crunch $ORIGINALEXTENSION
+                crunch "Resultant \$DOWNLOADFILENAME in the fetch_podcasts \
+                    () function after running through function fix_url () of \
+                    the \$DLURL determined to be:"
+                crunch $DOWNLOADFILENAME
+                crunch "Resultant \$DOWNLOADEXTENSION in the fetch_podcasts \
+                    () function after running through function fix_url () of \
+                    the \$DLURL determined to be:"
+                crunch $DOWNLOADEXTENSION
+                crunch "Resultant \$FIXEDFILENAME in the fetch_podcasts \
+                    () function after combining \$ORIGINALFILENAME and \
+                    \$DOWNLOADEXTENSION determined to be:"
+                crunch $FIXEDFILENAME
+                if [ "$FILENAME" != "$FIXEDFILENAME" ]; then
+                    crunch "Download filename different from name in \
+                        feed, fixed."
+                fi
+            fi
 
+            FILENAME=$FIXEDFILENAME
             echo $FILENAME >> $TEMPLOG
             if verbose; then
                 echo -n "Found $FILENAME in feed "
