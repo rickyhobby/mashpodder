@@ -401,7 +401,7 @@ check_directory () {
 
 fetch_podcasts () {
     # This is the main loop
-    local LINE FEED DATADIR DLNUM COUNTER FILE URL FILENAME DLURL
+    local LINE FEED DATADIR DLNUM COUNTER FILE URL FILENAME DLURL ORIGINALFILENAME ORIGINALEXTENSION DOWNLOADFILENAME DOWNLOADEXTENSION
 
     # Read the mp.conf file and wget any url not already in the
     # podcast.log file:
@@ -448,8 +448,28 @@ fetch_podcasts () {
             if [ "$DLNUM" = "$COUNTER" ]; then
                 break
             fi
+
+            # Determine the final, possibly redirected URL of the file.
             DLURL=$($CURL -s -I -L -w %{url_effective} --url $URL | tail -n 1)
+
+            # Clean and fix the original filename and extension
+            # as listed in the feed.
+            fix_url $URL
+            ORIGINALFILENAME="${FILENAME%.*}"
+            ORIGINALEXTENSION="${FILENAME##*.}"
+
+            # Clean and fix the filename and extension as listed
+            # in the final, possibly redirected URL.
             fix_url $DLURL
+            DOWNLOADFILENAME="${FILENAME%.*}"
+            DOWNLOADEXTENSION="${FILENAME##*.}"
+
+            # Determine the final filename by combining the original
+            # suffixless basename, and the extension from the final URL.
+            # While this usually the same, some feeds will redirect to a
+            # different filename (eg http://rss.cat5.tv/hd.rss)
+            FILENAME="$ORIGINALFILENAME"."$DOWNLOADEXTENSION"
+
             echo $FILENAME >> $TEMPLOG
             if verbose; then
                 echo -n "Found $FILENAME in feed "
