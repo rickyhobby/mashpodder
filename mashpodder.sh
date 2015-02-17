@@ -426,13 +426,13 @@ fetch_podcasts () {
             fi
         fi
 
-        FILE=$($WGET -q $FEED -O - | \
+        FILE=$($WGET -q -T $WGET_TIMEOUT $FEED -O - | \
             $XSLTPROC $PARSE_ENCLOSURE - 2> /dev/null) || \
             # Let's try the diff from turbooster as reported in Issue 13.
             # If it causes problems, uncomment the next line and comment
             # out the one after that (the one with "grep url=" in it.
-            #FILE=$($WGET -q $FEED -O - | tr '\r' '\n' | tr \' \" | \
-            FILE=$($WGET -q $FEED -O - | grep url= | \
+            #FILE=$($WGET -q -T $WGET_TIMEOUT $FEED -O - | tr '\r' '\n' | tr \' \" | \
+            FILE=$($WGET -q -T $WGET_TIMEOUT $FEED -O - | grep url= | \
             sed -n 's/.*url="\([^"]*\)".*/\1/p')
 
         if [[ -z $FILE ]]; then
