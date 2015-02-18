@@ -241,7 +241,7 @@ sanity_checks () {
         fi
     fi
 
-    if [ $BINFAIL = "1" ]; then
+    if [ "$BINFAIL" = "1" ]; then
         crunch "Dependent binaries failure.  Check the settings at the top \
             of mashpodder.sh to see if they are set correctly and that they \
             are all installed.  Exiting!"
@@ -568,7 +568,7 @@ fetch_podcasts () {
                     fi
 
                     cd $TMPDIR
-                    if [ $LIMIT_RATE = "1" ]; then
+                    if [ "$LIMIT_RATE" = "1" ]; then
                         $WGET $WGET_QUIET -c -T $WGET_TIMEOUT -O "$FILENAME" \
                             --limit-rate=$WGET_RATELIMIT "$DLURL"
                     else
@@ -636,7 +636,7 @@ final_cleanup () {
     rm -f $TEMPRSSFILE
     if verbose; then
         echo "Total downloads: $NEWDL"
-        if [ $LIMIT_RATE = "1" ]; then
+        if [ "$LIMIT_RATE" = "1" ]; then
             echo "Downloads were rate limited to $WGET_RATELIMIT."
         else
             echo "Downloads were not rate limited."
